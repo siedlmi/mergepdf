@@ -1,9 +1,3 @@
-Perfect! Here’s a README.md tailored for your CLI utility mergepdf:
-
-⸻
-
-
-
 # mergepdf
 
 **mergepdf** is a simple command-line utility that merges all PDF files in a specified folder into a single PDF. It's fast, easy to use, and ideal for automating document workflows.
