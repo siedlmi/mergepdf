@@ -17,15 +17,26 @@ def get_pdfs_from_folder(folder, recursive=False):
         ]
     return sorted(pdfs)
 
-def merge_pdfs(pdf_list, output):
+def merge_pdfs(pdf_list, output, dry_run=False):
     if not pdf_list:
         print("No PDF files found to merge.")
+        return
+
+    if dry_run:
+        print("[Dry Run] The following PDF files would be merged:")
+        for pdf in pdf_list:
+            print(f"  - {pdf}")
+        print(f"[Dry Run] Output file would be: {output}")
         return
 
     merger = PdfMerger()
     for pdf in pdf_list:
         print(f"Adding: {pdf}")
         merger.append(pdf)
+
+    output_dir = os.path.dirname(output)
+    if output_dir and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
     merger.write(output)
     merger.close()
@@ -47,6 +58,11 @@ def main():
         action="store_true",
         help="Recursively search subfolders for PDF files",
     )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Preview the PDF files that would be merged without creating an output file",
+    )
 
     args = parser.parse_args()
 
@@ -55,7 +71,7 @@ def main():
         return
 
     pdfs = get_pdfs_from_folder(args.folder, args.recursive)
-    merge_pdfs(pdfs, args.output)
+    merge_pdfs(pdfs, args.output, args.dry_run)
 
 if __name__ == "__main__":
     main()
