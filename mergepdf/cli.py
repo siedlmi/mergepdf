@@ -1,26 +1,25 @@
 import argparse
 import os
+import logging
 from PyPDF2 import PdfMerger
 from importlib.metadata import version, PackageNotFoundError
 
+logging.basicConfig(level=logging.INFO)
+
 def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None):
     pdfs = []
-    if recursive:
-        for root, _, files in os.walk(folder):
-            for f in files:
-                if f.lower().endswith(".pdf"):
-                    pdfs.append(os.path.join(root, f))
-    else:
-        pdfs = [
-            os.path.join(folder, f)
-            for f in os.listdir(folder)
-            if f.lower().endswith(".pdf")
-        ]
+    walk_fn = os.walk if recursive else lambda f: [(f, [], os.listdir(f))]
+    for root, _, files in walk_fn(folder):
+        for f in files:
+            if f.lower().endswith(".pdf"):
+                pdfs.append(os.path.join(root, f))
+    return sort_pdfs(pdfs, sort_by, custom_order)
 
+def sort_pdfs(pdfs, sort_by, custom_order=None):
     if sort_by == "modified":
-        pdfs.sort(key=lambda f: os.path.getmtime(f))
+        return sorted(pdfs, key=os.path.getmtime)
     elif sort_by == "filesize":
-        pdfs.sort(key=lambda f: os.path.getsize(f))
+        return sorted(pdfs, key=os.path.getsize)
     elif sort_by == "pagenumber":
         from PyPDF2 import PdfReader
         def get_page_count(f):
@@ -28,34 +27,31 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_ord
                 return len(PdfReader(f).pages)
             except Exception:
                 return float("inf")
-        pdfs.sort(key=get_page_count)
+        return sorted(pdfs, key=get_page_count)
     elif sort_by == "custom" and custom_order:
         files_found = {os.path.basename(f): f for f in pdfs}
-        pdfs = [files_found[name] for name in custom_order if name in files_found]
-    else:  # default is name
-        pdfs.sort()
-
-    return pdfs
+        return [files_found[name] for name in custom_order if name in files_found]
+    return sorted(pdfs)
 
 def merge_pdfs(pdf_list, output, dry_run=False):
     if not pdf_list:
-        print("No PDF files found to merge.")
+        logging.warning("No PDF files found to merge.")
         return
 
     if dry_run:
-        print("[Dry Run] The following PDF files would be merged:")
+        logging.info("[Dry Run] The following PDF files would be merged:")
         for pdf in pdf_list:
-            print(f"  - {pdf}")
-        print(f"[Dry Run] Output file would be: {output}")
+            logging.info(f"  - {pdf}")
+        logging.info(f"[Dry Run] Output file would be: {output}")
         return
 
     merger = PdfMerger()
     for pdf in pdf_list:
         try:
-            print(f"Adding: {pdf}")
+            logging.info(f"Adding: {pdf}")
             merger.append(pdf)
         except Exception as e:
-            print(f"Warning: Skipping '{pdf}' due to error: {e}")
+            logging.warning(f"Skipping '{pdf}' due to error: {e}")
 
     output_dir = os.path.dirname(output)
     if output_dir and not os.path.exists(output_dir):
@@ -63,7 +59,7 @@ def merge_pdfs(pdf_list, output, dry_run=False):
 
     merger.write(output)
     merger.close()
-    print(f"Merged PDF saved as: {output}")
+    logging.info(f"Merged PDF saved as: {output}")
 
 def main():
     try:
@@ -112,11 +108,19 @@ def main():
         version=f"%(prog)s {pkg_version}",
         help="Show the version of this program and exit"
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output"
+    )
 
     args = parser.parse_args()
 
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+
     if not os.path.isdir(args.folder):
-        print(f"Error: {args.folder} is not a valid directory.")
+        logging.error(f"{args.folder} is not a valid directory.")
         return
 
     custom_order = args.custom_order
@@ -125,7 +129,7 @@ def main():
             with open(args.order_file, "r") as f:
                 custom_order = [line.strip() for line in f if line.strip()]
         except Exception as e:
-            print(f"Error reading order file: {e}")
+            logging.error(f"Error reading order file: {e}")
             return
 
     pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order)
