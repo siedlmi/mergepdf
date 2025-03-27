@@ -96,6 +96,10 @@ def main():
         nargs="+",
         help="List of filenames in custom sort order (used only if --sort-by=custom)"
     )
+    parser.add_argument(
+        "--order-file",
+        help="Path to a text file listing PDF filenames in custom sort order (one per line)"
+    )
 
     args = parser.parse_args()
 
@@ -103,7 +107,16 @@ def main():
         print(f"Error: {args.folder} is not a valid directory.")
         return
 
-    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, args.custom_order)
+    custom_order = args.custom_order
+    if args.order_file:
+        try:
+            with open(args.order_file, "r") as f:
+                custom_order = [line.strip() for line in f if line.strip()]
+        except Exception as e:
+            print(f"Error reading order file: {e}")
+            return
+
+    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order)
     merge_pdfs(pdfs, args.output, args.dry_run)
 
 if __name__ == "__main__":
