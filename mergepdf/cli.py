@@ -29,8 +29,8 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_ord
                 return float("inf")
         pdfs.sort(key=get_page_count)
     elif sort_by == "custom" and custom_order:
-        order_map = {name: i for i, name in enumerate(custom_order)}
-        pdfs.sort(key=lambda f: order_map.get(os.path.basename(f), float("inf")))
+        files_found = {os.path.basename(f): f for f in pdfs}
+        pdfs = [files_found[name] for name in custom_order if name in files_found]
     else:  # default is name
         pdfs.sort()
 
