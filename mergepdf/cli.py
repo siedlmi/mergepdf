@@ -66,6 +66,11 @@ def merge_pdfs(pdf_list, output, dry_run=False):
     print(f"Merged PDF saved as: {output}")
 
 def main():
+    try:
+        pkg_version = version("mergepdf")
+    except PackageNotFoundError:
+        pkg_version = "unknown"
+
     parser = argparse.ArgumentParser(description="Merge all PDF files in a folder.")
     parser.add_argument(
         "folder",
@@ -107,11 +112,6 @@ def main():
         version=f"%(prog)s {pkg_version}",
         help="Show the version of this program and exit"
     )
-
-    try:
-        pkg_version = version("mergepdf")
-    except PackageNotFoundError:
-        pkg_version = "unknown"
 
     args = parser.parse_args()
 
