@@ -2,12 +2,19 @@ import argparse
 import os
 from PyPDF2 import PdfMerger
 
-def get_pdfs_from_folder(folder):
-    pdfs = [
-        os.path.join(folder, f)
-        for f in os.listdir(folder)
-        if f.lower().endswith(".pdf")
-    ]
+def get_pdfs_from_folder(folder, recursive=False):
+    pdfs = []
+    if recursive:
+        for root, _, files in os.walk(folder):
+            for f in files:
+                if f.lower().endswith(".pdf"):
+                    pdfs.append(os.path.join(root, f))
+    else:
+        pdfs = [
+            os.path.join(folder, f)
+            for f in os.listdir(folder)
+            if f.lower().endswith(".pdf")
+        ]
     return sorted(pdfs)
 
 def merge_pdfs(pdf_list, output):
@@ -35,6 +42,11 @@ def main():
         default="merged.pdf",
         help="Name of the output merged PDF file (default: merged.pdf)",
     )
+    parser.add_argument(
+        "--recursive",
+        action="store_true",
+        help="Recursively search subfolders for PDF files",
+    )
 
     args = parser.parse_args()
 
@@ -42,7 +54,7 @@ def main():
         print(f"Error: {args.folder} is not a valid directory.")
         return
 
-    pdfs = get_pdfs_from_folder(args.folder)
+    pdfs = get_pdfs_from_folder(args.folder, args.recursive)
     merge_pdfs(pdfs, args.output)
 
 if __name__ == "__main__":

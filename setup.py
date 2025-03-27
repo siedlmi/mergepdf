@@ -2,10 +2,11 @@ from setuptools import setup, find_packages
 
 setup(
     name="mergepdf",
-    version="0.1.0",
+    version="0.1.2",
     packages=find_packages(),
     install_requires=[
         "PyPDF2>=3.0.0",
+        "pycryptodome>=3.9",
     ],
     entry_points={
         "console_scripts": [
