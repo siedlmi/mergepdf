@@ -1,6 +1,7 @@
 import argparse
 import os
 from PyPDF2 import PdfMerger
+from importlib.metadata import version, PackageNotFoundError
 
 def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None):
     pdfs = []
@@ -100,6 +101,17 @@ def main():
         "--order-file",
         help="Path to a text file listing PDF filenames in custom sort order (one per line)"
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {pkg_version}",
+        help="Show the version of this program and exit"
+    )
+
+    try:
+        pkg_version = version("mergepdf")
+    except PackageNotFoundError:
+        pkg_version = "unknown"
 
     args = parser.parse_args()
 
