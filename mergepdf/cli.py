@@ -31,8 +31,11 @@ def merge_pdfs(pdf_list, output, dry_run=False):
 
     merger = PdfMerger()
     for pdf in pdf_list:
-        print(f"Adding: {pdf}")
-        merger.append(pdf)
+        try:
+            print(f"Adding: {pdf}")
+            merger.append(pdf)
+        except Exception as e:
+            print(f"Warning: Skipping '{pdf}' due to error: {e}")
 
     output_dir = os.path.dirname(output)
     if output_dir and not os.path.exists(output_dir):
