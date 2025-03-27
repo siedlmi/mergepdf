@@ -59,8 +59,8 @@ mergepdf ./pdfs --sort-by custom --order-file order.txt -o result.pdf
 ⸻
 
 ### 🧾 Requirements
-	•	Python 3.7+
-	•	PyPDF2
+	•   Python 3.7+
+	•   PyPDF2
     •   pycryptodome
 
 Dependencies are automatically installed during pip install.
