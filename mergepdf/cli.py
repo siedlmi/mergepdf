@@ -31,7 +31,7 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="name"):
     else:  # default is name
         pdfs.sort()
 
-    return sorted(pdfs)
+    return pdfs
 
 def merge_pdfs(pdf_list, output, dry_run=False):
     if not pdf_list:
