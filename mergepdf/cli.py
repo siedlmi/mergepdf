@@ -2,7 +2,7 @@ import argparse
 import os
 from PyPDF2 import PdfMerger
 
-def get_pdfs_from_folder(folder, recursive=False, sort_by="filename"):
+def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None):
     pdfs = []
     if recursive:
         for root, _, files in os.walk(folder):
@@ -28,6 +28,9 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename"):
             except Exception:
                 return float("inf")
         pdfs.sort(key=get_page_count)
+    elif sort_by == "custom" and custom_order:
+        order_map = {name: i for i, name in enumerate(custom_order)}
+        pdfs.sort(key=lambda f: order_map.get(os.path.basename(f), float("inf")))
     else:  # default is name
         pdfs.sort()
 
@@ -84,9 +87,14 @@ def main():
     )
     parser.add_argument(
         "--sort-by",
-        choices=["filename", "modified", "filesize", "pagenumber"],
+        choices=["filename", "modified", "filesize", "pagenumber", "custom"],
         default="filename",
-        help="Sort PDF files by: filename (default), modified, filesize, or pagenumber"
+        help="Sort PDF files by: filename (default), modified, filesize, pagenumber, or custom"
+    )
+    parser.add_argument(
+        "--custom-order",
+        nargs="+",
+        help="List of filenames in custom sort order (used only if --sort-by=custom)"
     )
 
     args = parser.parse_args()
@@ -95,7 +103,7 @@ def main():
         print(f"Error: {args.folder} is not a valid directory.")
         return
 
-    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by)
+    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, args.custom_order)
     merge_pdfs(pdfs, args.output, args.dry_run)
 
 if __name__ == "__main__":
