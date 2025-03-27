@@ -2,7 +2,7 @@ import argparse
 import os
 from PyPDF2 import PdfMerger
 
-def get_pdfs_from_folder(folder, recursive=False, sort_by="name"):
+def get_pdfs_from_folder(folder, recursive=False, sort_by="filename"):
     pdfs = []
     if recursive:
         for root, _, files in os.walk(folder):
@@ -84,9 +84,9 @@ def main():
     )
     parser.add_argument(
         "--sort-by",
-        choices=["name", "modified", "filesize", "pagenumber"],
-        default="name",
-        help="Sort PDF files by: name (default), modified, filesize, or pagenumber"
+        choices=["filename", "modified", "filesize", "pagenumber"],
+        default="filename",
+        help="Sort PDF files by: filename (default), modified, filesize, or pagenumber"
     )
 
     args = parser.parse_args()
