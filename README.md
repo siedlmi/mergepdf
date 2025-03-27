@@ -21,7 +21,7 @@
 Clone the repository and install using `pip`:
 
 ```bash
-git clone https://github.com/yourusername/mergepdf.git
+git clone https://github.com/siedlmi/mergepdf.git
 cd mergepdf
 pip install .
 ```
