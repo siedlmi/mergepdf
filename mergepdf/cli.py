@@ -6,7 +6,8 @@ This tool allows users to merge multiple PDF files from a directory, with option
 import argparse
 import os
 import logging
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfReader, PdfMerger
+import getpass
 from importlib.metadata import version, PackageNotFoundError
 
 logging.basicConfig(level=logging.INFO)
@@ -51,7 +52,6 @@ def sort_pdfs(pdfs, sort_by, custom_order=None, reverse=False):
     elif sort_by == "filesize":
         return sorted(pdfs, key=os.path.getsize, reverse=reverse)
     elif sort_by == "pagenumber":
-        from PyPDF2 import PdfReader
         def get_page_count(f):
             try:
                 return len(PdfReader(f).pages)
@@ -89,8 +89,16 @@ def merge_pdfs(pdf_list, output, dry_run=False):
     merger = PdfMerger()
     for pdf in pdf_list:
         try:
+            reader = PdfReader(pdf)
+            if reader.is_encrypted:
+                password = getpass.getpass(prompt=f"Enter password for '{pdf}': ")
+                try:
+                    reader.decrypt(password)
+                except Exception as e:
+                    logging.warning(f"Skipping '{pdf}' due to decryption error: {e}")
+                    continue
             logging.info(f"Adding: {pdf}")
-            merger.append(pdf)
+            merger.append(reader)
         except Exception as e:
             logging.warning(f"Skipping '{pdf}' due to error: {e}")
 
@@ -119,20 +127,16 @@ def read_order_file(path):
         logging.error(f"Error reading order file: {e}")
         return None
 
-def main():
+def parse_args(pkg_version: str) -> argparse.Namespace:
     """
-    The main entry point of the script.
+    Parse command line arguments.
 
-    Parses command line arguments, retrieves PDF files, and performs the merge operation.
+    Parameters:
+        pkg_version (str): The version of the package.
 
     Returns:
-        int: Exit status code (0 for success, 1 for failure).
+        argparse.Namespace: The parsed arguments.
     """
-    try:
-        pkg_version = version("mergepdf")
-    except PackageNotFoundError:
-        pkg_version = "unknown"
-
     parser = argparse.ArgumentParser(
         description="""Merge all PDF files in a folder.
 
@@ -165,7 +169,23 @@ Examples:
     misc_group.add_argument("--version", action="version", version=f"%(prog)s {pkg_version}",
                             help="Show the version of this program and exit")
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+    """
+    The main entry point of the script.
+
+    Parses command line arguments, retrieves PDF files, and performs the merge operation.
+
+    Returns:
+        int: Exit status code (0 for success, 1 for failure).
+    """
+    try:
+        pkg_version = version("mergepdf")
+    except PackageNotFoundError:
+        pkg_version = "unknown"
+
+    args = parse_args(pkg_version)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
