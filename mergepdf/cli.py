@@ -9,6 +9,8 @@ import logging
 from PyPDF2 import PdfReader, PdfMerger
 import getpass
 from importlib.metadata import version, PackageNotFoundError
+from datetime import datetime
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 
@@ -90,12 +92,10 @@ def merge_pdfs(pdf_list, output, dry_run=False):
     for pdf in pdf_list:
         try:
             reader = PdfReader(pdf)
-            if reader.is_encrypted:
+            if reader.is_encrypted and not reader.decrypt(""):
                 password = getpass.getpass(prompt=f"Enter password for '{pdf}': ")
-                try:
-                    reader.decrypt(password)
-                except Exception as e:
-                    logging.warning(f"Skipping '{pdf}' due to decryption error: {e}")
+                if not reader.decrypt(password):
+                    logging.warning(f"Skipping '{pdf}' due to decryption error: File has not been decrypted")
                     continue
             logging.info(f"Adding: {pdf}")
             merger.append(reader)
@@ -203,6 +203,15 @@ def main():
     pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order, args.reverse)
 
     output = args.output
+    now = datetime.now()
+    base_name = os.path.basename(os.path.normpath(args.folder))
+
+    output = output.replace("{date}", now.strftime("%Y-%m-%d"))
+    output = output.replace("{time}", now.strftime("%H-%M-%S"))
+    output = output.replace("{datetime}", now.strftime("%Y-%m-%d_%H-%M-%S"))
+    output = output.replace("{uuid}", str(uuid.uuid4()))
+    output = output.replace("{basename}", base_name)
+    
     if not output.lower().endswith(".pdf"):
         output += ".pdf"
         logging.debug(f"Adjusted output filename to: {output}")
