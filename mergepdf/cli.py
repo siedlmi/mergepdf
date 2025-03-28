@@ -1,3 +1,8 @@
+"""Merge PDF files from a specified folder, with options for sorting and custom order.
+
+This tool allows users to merge multiple PDF files from a directory, with options for recursive searching, sorting by various criteria, and defining a custom order for the files to be merged.
+"""
+
 import argparse
 import os
 import logging
@@ -7,6 +12,18 @@ from importlib.metadata import version, PackageNotFoundError
 logging.basicConfig(level=logging.INFO)
 
 def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None):
+    """
+    Retrieve a list of PDF files from the specified folder.
+
+    Parameters:
+        folder (str): The path to the folder containing PDF files.
+        recursive (bool): Whether to search subfolders recursively.
+        sort_by (str): The method to sort the PDF files (filename, modified, filesize, pagenumber, custom).
+        custom_order (list): A list of filenames for custom sorting.
+
+    Returns:
+        list: A sorted list of PDF file paths.
+    """
     pdfs = []
     walk_fn = os.walk if recursive else lambda f: [(f, [], os.listdir(f))]
     for root, _, files in walk_fn(folder):
@@ -16,6 +33,17 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_ord
     return sort_pdfs(pdfs, sort_by, custom_order)
 
 def sort_pdfs(pdfs, sort_by, custom_order=None):
+    """
+    Sort a list of PDF file paths based on the specified criteria.
+
+    Parameters:
+        pdfs (list): A list of PDF file paths.
+        sort_by (str): The method to sort the PDF files.
+        custom_order (list): A list of filenames for custom sorting.
+
+    Returns:
+        list: A sorted list of PDF file paths.
+    """
     if sort_by == "modified":
         return sorted(pdfs, key=os.path.getmtime)
     elif sort_by == "filesize":
@@ -34,6 +62,17 @@ def sort_pdfs(pdfs, sort_by, custom_order=None):
     return sorted(pdfs)
 
 def merge_pdfs(pdf_list, output, dry_run=False):
+    """
+    Merge a list of PDF files into a single PDF file.
+
+    Parameters:
+        pdf_list (list): A list of PDF file paths to merge.
+        output (str): The path for the output merged PDF file.
+        dry_run (bool): If True, only log the files that would be merged without performing the merge.
+
+    Returns:
+        None
+    """
     if not pdf_list:
         logging.warning("No PDF files found to merge.")
         return
@@ -62,6 +101,15 @@ def merge_pdfs(pdf_list, output, dry_run=False):
     logging.info(f"Merged PDF saved as: {output}")
 
 def read_order_file(path):
+    """
+    Read a text file and return a list of filenames for custom sorting.
+
+    Parameters:
+        path (str): The path to the text file containing filenames.
+
+    Returns:
+        list: A list of filenames if successfully read, None otherwise.
+    """
     try:
         with open(path, "r") as f:
             return [line.strip() for line in f if line.strip()]
@@ -70,6 +118,14 @@ def read_order_file(path):
         return None
 
 def main():
+    """
+    The main entry point of the script.
+
+    Parses command line arguments, retrieves PDF files, and performs the merge operation.
+
+    Returns:
+        int: Exit status code (0 for success, 1 for failure).
+    """
     try:
         pkg_version = version("mergepdf")
     except PackageNotFoundError:
