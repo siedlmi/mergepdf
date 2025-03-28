@@ -11,7 +11,7 @@ from importlib.metadata import version, PackageNotFoundError
 
 logging.basicConfig(level=logging.INFO)
 
-def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None):
+def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None, reverse=False):
     """
     Retrieve a list of PDF files from the specified folder.
 
@@ -20,6 +20,7 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_ord
         recursive (bool): Whether to search subfolders recursively.
         sort_by (str): The method to sort the PDF files (filename, modified, filesize, pagenumber, custom).
         custom_order (list): A list of filenames for custom sorting.
+        reverse (bool): Whether to reverse the sort order.
 
     Returns:
         list: A sorted list of PDF file paths.
@@ -30,9 +31,9 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_ord
         for f in files:
             if f.lower().endswith(".pdf"):
                 pdfs.append(os.path.join(root, f))
-    return sort_pdfs(pdfs, sort_by, custom_order)
+    return sort_pdfs(pdfs, sort_by, custom_order, reverse)
 
-def sort_pdfs(pdfs, sort_by, custom_order=None):
+def sort_pdfs(pdfs, sort_by, custom_order=None, reverse=False):
     """
     Sort a list of PDF file paths based on the specified criteria.
 
@@ -40,14 +41,15 @@ def sort_pdfs(pdfs, sort_by, custom_order=None):
         pdfs (list): A list of PDF file paths.
         sort_by (str): The method to sort the PDF files.
         custom_order (list): A list of filenames for custom sorting.
+        reverse (bool): Whether to reverse the sort order.
 
     Returns:
         list: A sorted list of PDF file paths.
     """
     if sort_by == "modified":
-        return sorted(pdfs, key=os.path.getmtime)
+        return sorted(pdfs, key=os.path.getmtime, reverse=reverse)
     elif sort_by == "filesize":
-        return sorted(pdfs, key=os.path.getsize)
+        return sorted(pdfs, key=os.path.getsize, reverse=reverse)
     elif sort_by == "pagenumber":
         from PyPDF2 import PdfReader
         def get_page_count(f):
@@ -55,11 +57,11 @@ def sort_pdfs(pdfs, sort_by, custom_order=None):
                 return len(PdfReader(f).pages)
             except Exception:
                 return float("inf")
-        return sorted(pdfs, key=get_page_count)
+        return sorted(pdfs, key=get_page_count, reverse=reverse)
     elif sort_by == "custom" and custom_order:
         files_found = {os.path.basename(f): f for f in pdfs}
         return [files_found[name] for name in custom_order if name in files_found]
-    return sorted(pdfs)
+    return sorted(pdfs, reverse=reverse)
 
 def merge_pdfs(pdf_list, output, dry_run=False):
     """
@@ -152,6 +154,7 @@ Examples:
                                default="filename", help="Sort PDF files by the selected method")
     sorting_group.add_argument("--custom-order", nargs="+", help="List of filenames in custom sort order (use with --sort-by custom)")
     sorting_group.add_argument("--order-file", help="Path to a text file listing filenames for custom sort order")
+    sorting_group.add_argument("--reverse", action="store_true", help="Reverse the sort order")
 
     output_group = parser.add_argument_group("Output options")
     output_group.add_argument("-o", "--output", default="merged.pdf", help="Name of the output merged PDF file")
@@ -177,7 +180,7 @@ Examples:
         if custom_order is None:
             return 1
 
-    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order)
+    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order, args.reverse)
 
     output = args.output
     if not output.lower().endswith(".pdf"):
