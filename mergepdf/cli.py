@@ -116,9 +116,6 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.output.lower().endswith(".pdf"):
-        args.output += ".pdf"
-
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -136,7 +133,16 @@ def main():
             return
 
     pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order)
-    merge_pdfs(pdfs, args.output, args.dry_run)
+
+    output = args.output
+    print(output)
+
+    if not output.lower().endswith(".pdf"):
+        output += ".pdf"
+        logging.debug(f"Adjusted output filename to: {output}")
+    print(output)
+
+    merge_pdfs(pdfs, output, args.dry_run)
 
 if __name__ == "__main__":
     main()
