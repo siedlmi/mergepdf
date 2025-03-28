@@ -34,7 +34,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Bump version
-        run: bump2version ${{ github.event.inputs.bump }}
+        run: bump2version ${{ github.event.inputs.bump || 'patch' }} --allow-dirty
 
       - name: Push changes
         run: |
