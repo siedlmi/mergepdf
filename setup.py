@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="mergepdf",
-    version="0.1.894",
+    version="0.1.895",
     packages=find_packages(),
     install_requires=[
         "PyPDF2>=3.0.0",
