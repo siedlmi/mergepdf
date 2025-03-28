@@ -135,12 +135,9 @@ def main():
     pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order)
 
     output = args.output
-    print(output)
-
     if not output.lower().endswith(".pdf"):
         output += ".pdf"
         logging.debug(f"Adjusted output filename to: {output}")
-    print(output)
 
     merge_pdfs(pdfs, output, args.dry_run)
 
