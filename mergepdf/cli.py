@@ -61,6 +61,14 @@ def merge_pdfs(pdf_list, output, dry_run=False):
     merger.close()
     logging.info(f"Merged PDF saved as: {output}")
 
+def read_order_file(path):
+    try:
+        with open(path, "r") as f:
+            return [line.strip() for line in f if line.strip()]
+    except Exception as e:
+        logging.error(f"Error reading order file: {e}")
+        return None
+
 def main():
     try:
         pkg_version = version("mergepdf")
@@ -105,16 +113,13 @@ Examples:
 
     if not os.path.isdir(args.folder):
         logging.error(f"{args.folder} is not a valid directory.")
-        return
+        return 1
 
     custom_order = args.custom_order
     if args.order_file:
-        try:
-            with open(args.order_file, "r") as f:
-                custom_order = [line.strip() for line in f if line.strip()]
-        except Exception as e:
-            logging.error(f"Error reading order file: {e}")
-            return
+        custom_order = read_order_file(args.order_file)
+        if custom_order is None:
+            return 1
 
     pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order)
 
@@ -124,6 +129,8 @@ Examples:
         logging.debug(f"Adjusted output filename to: {output}")
 
     merge_pdfs(pdfs, output, args.dry_run)
+    return 0
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main())
