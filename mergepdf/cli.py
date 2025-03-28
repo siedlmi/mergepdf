@@ -67,52 +67,36 @@ def main():
     except PackageNotFoundError:
         pkg_version = "unknown"
 
-    parser = argparse.ArgumentParser(description="Merge all PDF files in a folder.")
-    parser.add_argument(
-        "folder",
-        help="Path to the folder containing PDF files to merge",
+    parser = argparse.ArgumentParser(
+        description="""Merge all PDF files in a folder.
+
+Examples:
+  mergepdf ./pdfs -o combined.pdf
+  mergepdf ./docs --recursive --sort-by modified
+  mergepdf ./invoices --sort-by custom --custom-order A.pdf B.pdf
+  mergepdf ./reports --order-file order.txt -o final.pdf
+""",
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument(
-        "-o", "--output",
-        default="merged.pdf",
-        help="Name of the output merged PDF file (default: merged.pdf)",
-    )
-    parser.add_argument(
-        "--recursive",
-        action="store_true",
-        help="Recursively search subfolders for PDF files",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Preview the PDF files that would be merged without creating an output file",
-    )
-    parser.add_argument(
-        "--sort-by",
-        choices=["filename", "modified", "filesize", "pagenumber", "custom"],
-        default="filename",
-        help="Sort PDF files by: filename (default), modified, filesize, pagenumber, or custom"
-    )
-    parser.add_argument(
-        "--custom-order",
-        nargs="+",
-        help="List of filenames in custom sort order (used only if --sort-by=custom)"
-    )
-    parser.add_argument(
-        "--order-file",
-        help="Path to a text file listing PDF filenames in custom sort order (one per line)"
-    )
-    parser.add_argument(
-        "--version",
-        action="version",
-        version=f"%(prog)s {pkg_version}",
-        help="Show the version of this program and exit"
-    )
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose output"
-    )
+
+    input_group = parser.add_argument_group("Input options")
+    input_group.add_argument("folder", help="Path to the folder containing PDF files to merge")
+    input_group.add_argument("--recursive", action="store_true", help="Recursively search subfolders for PDF files")
+
+    sorting_group = parser.add_argument_group("Sorting options")
+    sorting_group.add_argument("--sort-by", choices=["filename", "modified", "filesize", "pagenumber", "custom"],
+                               default="filename", help="Sort PDF files by the selected method")
+    sorting_group.add_argument("--custom-order", nargs="+", help="List of filenames in custom sort order (use with --sort-by custom)")
+    sorting_group.add_argument("--order-file", help="Path to a text file listing filenames for custom sort order")
+
+    output_group = parser.add_argument_group("Output options")
+    output_group.add_argument("-o", "--output", default="merged.pdf", help="Name of the output merged PDF file")
+
+    misc_group = parser.add_argument_group("Other options")
+    misc_group.add_argument("--dry-run", action="store_true", help="Preview the files to be merged without creating output")
+    misc_group.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    misc_group.add_argument("--version", action="version", version=f"%(prog)s {pkg_version}",
+                            help="Show the version of this program and exit")
 
     args = parser.parse_args()
 
