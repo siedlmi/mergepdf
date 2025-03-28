@@ -116,6 +116,9 @@ def main():
 
     args = parser.parse_args()
 
+    if not args.output.lower().endswith(".pdf"):
+        args.output += ".pdf"
+
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
 
