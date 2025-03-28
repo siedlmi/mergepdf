@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name="mergepdf"
 description="A CLI utility to merge PDF files in a folder."
-version = "0.1.1120"
+version = "0.1.1121"
 requires-python = ">= 3.7"
 readme = "README.md"
 dynamic = ["dependencies"]
