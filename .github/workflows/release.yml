@@ -1,6 +1,10 @@
 name: Bump Version and Tag
 
 on:
+  push:
+    branches:
+      - main  # or whichever branch you're targeting
+
   workflow_dispatch:
     inputs:
       bump:
