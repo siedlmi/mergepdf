@@ -3,7 +3,14 @@ requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name="mergepdf"
+name = "mergepdf"
 version = "0.1.9"
-requires-python = ">= 3.7"
+requires-python = ">=3.7"
 readme = "README.md"
+dependencies = [
+    "PyPDF2>=3.0.0",
+    "pycryptodome>=3.9"
+]
+
+[project.scripts]
+mergepdf = "mergepdf.cli:main"
