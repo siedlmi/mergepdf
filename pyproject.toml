@@ -7,8 +7,15 @@ name="mergepdf"
 description="A CLI utility to merge PDF files in a folder."
 version = "0.1.1240"
 requires-python = ">= 3.7"
+authors = [{name = "Michal Siedlecki", email = "mi.siedlecki@gmail.com"}]
+keywords = ["CLI", "PDF", "merge"]
+license = "MIT"
 readme = "README.md"
 dynamic = ["dependencies"]
+
+[project.urls]
+Repository = "https://github.com/siedlmi/mergepdf.git"
+Issues = "https://github.com/siedlmi/mergepdf/issues"
 
 [project.scripts]
 mergepdf = "mergepdf.cli:main"

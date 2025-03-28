@@ -6,12 +6,15 @@ This tool allows users to merge multiple PDF files from a directory, with option
 import argparse
 import os
 import logging
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfReader, PdfMerger
+import getpass
 from importlib.metadata import version, PackageNotFoundError
+from datetime import datetime
+import uuid
 
 logging.basicConfig(level=logging.INFO)
 
-def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None):
+def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_order=None, reverse=False):
     """
     Retrieve a list of PDF files from the specified folder.
 
@@ -20,6 +23,7 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_ord
         recursive (bool): Whether to search subfolders recursively.
         sort_by (str): The method to sort the PDF files (filename, modified, filesize, pagenumber, custom).
         custom_order (list): A list of filenames for custom sorting.
+        reverse (bool): Whether to reverse the sort order.
 
     Returns:
         list: A sorted list of PDF file paths.
@@ -30,9 +34,9 @@ def get_pdfs_from_folder(folder, recursive=False, sort_by="filename", custom_ord
         for f in files:
             if f.lower().endswith(".pdf"):
                 pdfs.append(os.path.join(root, f))
-    return sort_pdfs(pdfs, sort_by, custom_order)
+    return sort_pdfs(pdfs, sort_by, custom_order, reverse)
 
-def sort_pdfs(pdfs, sort_by, custom_order=None):
+def sort_pdfs(pdfs, sort_by, custom_order=None, reverse=False):
     """
     Sort a list of PDF file paths based on the specified criteria.
 
@@ -40,26 +44,26 @@ def sort_pdfs(pdfs, sort_by, custom_order=None):
         pdfs (list): A list of PDF file paths.
         sort_by (str): The method to sort the PDF files.
         custom_order (list): A list of filenames for custom sorting.
+        reverse (bool): Whether to reverse the sort order.
 
     Returns:
         list: A sorted list of PDF file paths.
     """
     if sort_by == "modified":
-        return sorted(pdfs, key=os.path.getmtime)
+        return sorted(pdfs, key=os.path.getmtime, reverse=reverse)
     elif sort_by == "filesize":
-        return sorted(pdfs, key=os.path.getsize)
+        return sorted(pdfs, key=os.path.getsize, reverse=reverse)
     elif sort_by == "pagenumber":
-        from PyPDF2 import PdfReader
         def get_page_count(f):
             try:
                 return len(PdfReader(f).pages)
             except Exception:
                 return float("inf")
-        return sorted(pdfs, key=get_page_count)
+        return sorted(pdfs, key=get_page_count, reverse=reverse)
     elif sort_by == "custom" and custom_order:
         files_found = {os.path.basename(f): f for f in pdfs}
         return [files_found[name] for name in custom_order if name in files_found]
-    return sorted(pdfs)
+    return sorted(pdfs, reverse=reverse)
 
 def merge_pdfs(pdf_list, output, dry_run=False):
     """
@@ -87,8 +91,14 @@ def merge_pdfs(pdf_list, output, dry_run=False):
     merger = PdfMerger()
     for pdf in pdf_list:
         try:
+            reader = PdfReader(pdf)
+            if reader.is_encrypted and not reader.decrypt(""):
+                password = getpass.getpass(prompt=f"Enter password for '{pdf}': ")
+                if not reader.decrypt(password):
+                    logging.warning(f"Skipping '{pdf}' due to decryption error: File has not been decrypted")
+                    continue
             logging.info(f"Adding: {pdf}")
-            merger.append(pdf)
+            merger.append(reader)
         except Exception as e:
             logging.warning(f"Skipping '{pdf}' due to error: {e}")
 
@@ -117,20 +127,16 @@ def read_order_file(path):
         logging.error(f"Error reading order file: {e}")
         return None
 
-def main():
+def parse_args(pkg_version: str) -> argparse.Namespace:
     """
-    The main entry point of the script.
+    Parse command line arguments.
 
-    Parses command line arguments, retrieves PDF files, and performs the merge operation.
+    Parameters:
+        pkg_version (str): The version of the package.
 
     Returns:
-        int: Exit status code (0 for success, 1 for failure).
+        argparse.Namespace: The parsed arguments.
     """
-    try:
-        pkg_version = version("mergepdf")
-    except PackageNotFoundError:
-        pkg_version = "unknown"
-
     parser = argparse.ArgumentParser(
         description="""Merge all PDF files in a folder.
 
@@ -152,6 +158,7 @@ Examples:
                                default="filename", help="Sort PDF files by the selected method")
     sorting_group.add_argument("--custom-order", nargs="+", help="List of filenames in custom sort order (use with --sort-by custom)")
     sorting_group.add_argument("--order-file", help="Path to a text file listing filenames for custom sort order")
+    sorting_group.add_argument("--reverse", action="store_true", help="Reverse the sort order")
 
     output_group = parser.add_argument_group("Output options")
     output_group.add_argument("-o", "--output", default="merged.pdf", help="Name of the output merged PDF file")
@@ -162,7 +169,23 @@ Examples:
     misc_group.add_argument("--version", action="version", version=f"%(prog)s {pkg_version}",
                             help="Show the version of this program and exit")
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+def main():
+    """
+    The main entry point of the script.
+
+    Parses command line arguments, retrieves PDF files, and performs the merge operation.
+
+    Returns:
+        int: Exit status code (0 for success, 1 for failure).
+    """
+    try:
+        pkg_version = version("mergepdf")
+    except PackageNotFoundError:
+        pkg_version = "unknown"
+
+    args = parse_args(pkg_version)
 
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
@@ -177,9 +200,18 @@ Examples:
         if custom_order is None:
             return 1
 
-    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order)
+    pdfs = get_pdfs_from_folder(args.folder, args.recursive, args.sort_by, custom_order, args.reverse)
 
     output = args.output
+    now = datetime.now()
+    base_name = os.path.basename(os.path.normpath(args.folder))
+
+    output = output.replace("{date}", now.strftime("%Y-%m-%d"))
+    output = output.replace("{time}", now.strftime("%H-%M-%S"))
+    output = output.replace("{datetime}", now.strftime("%Y-%m-%d_%H-%M-%S"))
+    output = output.replace("{uuid}", str(uuid.uuid4()))
+    output = output.replace("{basename}", base_name)
+    
     if not output.lower().endswith(".pdf"):
         output += ".pdf"
         logging.debug(f"Adjusted output filename to: {output}")

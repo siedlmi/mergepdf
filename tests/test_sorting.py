@@ -69,3 +69,50 @@ def test_sort_by_pagenumber(tmp_path):
 
     sorted_files = sort_pdfs([str(f2), str(f1)], "pagenumber")
     assert sorted_files == [str(f1), str(f2)]
+
+def test_sort_reverse_by_filename(tmp_path):
+    f1 = tmp_path / "A.pdf"
+    f2 = tmp_path / "B.pdf"
+    f1.write_text("File A")
+    f2.write_text("File B")
+    pdfs = [str(f1), str(f2)]
+    sorted_files = sort_pdfs(pdfs, sort_by="filename", reverse=True)
+    assert sorted_files == [str(f2), str(f1)]
+
+def test_sort_reverse_custom_ignored(tmp_path):
+    f1 = tmp_path / "file1.pdf"
+    f2 = tmp_path / "file2.pdf"
+    f1.write_text("A")
+    f2.write_text("B")
+    pdfs = [str(f1), str(f2)]
+    custom = ["file1.pdf", "file2.pdf"]
+    result = sort_pdfs(pdfs, sort_by="custom", custom_order=custom, reverse=True)
+    assert result == [str(f1), str(f2)]  # no effect expected
+
+def test_sort_reverse_by_modified(tmp_path):
+    file1 = tmp_path / "file1.pdf"
+    file2 = tmp_path / "file2.pdf"
+    file1.write_text("Older file")
+    file2.write_text("Newer file")
+    old_time = time.time() - 1000
+    os.utime(file1, (old_time, old_time))
+    sorted_files = sort_pdfs([str(file1), str(file2)], sort_by="modified", reverse=True)
+    assert sorted_files == [str(file2), str(file1)]
+
+def test_sort_reverse_by_pagenumber(tmp_path):
+    file1 = tmp_path / "short.pdf"
+    file2 = tmp_path / "long.pdf"
+
+    writer1 = PdfWriter()
+    writer1.add_blank_page(width=595.2, height=841.8)
+    with open(file1, "wb") as f:
+        writer1.write(f)
+
+    writer2 = PdfWriter()
+    writer2.add_blank_page(width=595.2, height=841.8)
+    writer2.add_blank_page(width=595.2, height=841.8)
+    with open(file2, "wb") as f:
+        writer2.write(f)
+
+    sorted_files = sort_pdfs([str(file1), str(file2)], sort_by="pagenumber", reverse=True)
+    assert sorted_files == [str(file2), str(file1)]
